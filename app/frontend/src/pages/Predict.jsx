@@ -29,7 +29,8 @@ export default function Predict() {
     const derived = addDerivedFeatures(values);
 
     try {
-      const response = await fetch('/api/predict', {
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${baseUrl}/api/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(derived),
@@ -212,13 +213,22 @@ function FormFieldGroup({ groupName, fields, values, onNum, onCat }) {
 }
 
 function ResultCard({ result, values }) {
-  const { energy, risk, cluster } = result;
+  const { energy, risk, cluster, isLiveModel } = result;
   const { risk: riskLabel, score, color } = risk;
   return (
     <div className="card border border-cyan-500/30">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h3 className="text-cyan-300 font-medium">Model Inference Results (All 3 Project Tracks)</h3>
-        <span className="text-xs text-slate-400">Evaluated on Machine Readings</span>
+        {isLiveModel ? (
+          <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Live Pickle Models (.pkl) Active
+          </span>
+        ) : (
+          <span className="text-xs px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-medium">
+            Fallback Heuristic Mode
+          </span>
+        )}
       </div>
       <div className="grid md:grid-cols-3 gap-6">
         {/* Track 2: Classifier */}
@@ -263,8 +273,15 @@ function ResultCard({ result, values }) {
       </div>
       <div className="mt-4 pt-4 border-t border-slate-700/30">
         <p className="text-xs text-slate-400">
-          Note: Front-end estimates are derived from the notebook analysis data and cluster centroids. Model-backed predictions
-          are available through the FastAPI service in <code>app/main.py</code>.
+          {isLiveModel ? (
+            <span className="text-emerald-400 font-medium">
+              ✓ Prediction evaluated live from scikit-learn models (final_classifier.pkl &amp; final_regressor.pkl) via FastAPI.
+            </span>
+          ) : (
+            <span>
+              Note: Currently running in client-side fallback mode. To evaluate through the real scikit-learn pickle models, start the FastAPI service in <code>app/main.py</code> or configure <code>VITE_API_URL</code>.
+            </span>
+          )}
         </p>
       </div>
     </div>

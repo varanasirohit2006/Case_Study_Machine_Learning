@@ -1,9 +1,19 @@
 import os
+import sys
+from pathlib import Path
 from typing import Any, Dict
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from predictor import load_artifacts, predict
+# Ensure the app directory is in sys.path so 'predictor' can be imported anywhere
+app_dir = Path(__file__).resolve().parent
+if str(app_dir) not in sys.path:
+    sys.path.insert(0, str(app_dir))
+
+try:
+    from app.predictor import load_artifacts, predict
+except ImportError:
+    from predictor import load_artifacts, predict
 
 app = FastAPI(title="Smart Manufacturing ML Service")
 
@@ -36,6 +46,7 @@ def health():
 
 
 @app.get("/metadata")
+@app.get("/api/metadata")
 def metadata():
     try:
         artifacts = get_artifacts()
@@ -45,6 +56,7 @@ def metadata():
 
 
 @app.post("/predict")
+@app.post("/api/predict")
 def predict_endpoint(values: Dict[str, Any]):
     try:
         artifacts = get_artifacts()
